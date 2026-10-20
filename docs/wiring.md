@@ -1,20 +1,82 @@
-# Smart Fan Wiring Guide
+## 1. Components and Build Options
 
-This guide documents the ESP32 smart fan controller, the 2N2222/PN2222A transistor logic shifters, and the experimental hardware startup-delay circuit.
+The project is divided into three hardware groups:
 
-## 1. Main Components
+1. Main smart fan controller
+2. Logic-shifter circuit
+3. Startup-delay circuit
 
-- ESP32 development board
-- Three-channel 5 V relay module
-- Three 2N2222A/PN2222A NPN transistors for the relay logic-shifter channels
-- One additional PN2222A transistor for the shared startup-delay circuit
-- 10 kΩ resistors
-- Two 220 µF electrolytic capacitors
-- 2.2 kΩ resistor, where used in the existing circuit
-- Approximately 49 kΩ potentiometer
-- Three-speed pedestal fan
+The logic-shifter and startup-delay circuits can each be built from individual components or assembled on a PCB. They are separate from the main ESP32, potentiometer, and fan hardware.
 
-Verify the actual component count and resistor placement against your assembled circuit before reproducing it.
+### A. Main Smart Fan Controller
+
+| Component | Quantity | Purpose |
+|---|---:|---|
+| ESP32 development board with CP2102 | 1 | Main controller |
+| Three-channel relay module | 1 | Selects fan speed |
+| Potentiometer, approximately 49–50 kΩ | 1 | Physical speed control |
+| Three-speed pedestal fan | 1 | Controlled appliance |
+| Suitable low-voltage power supply | As required | Powers the controller and relay module |
+
+### B. Logic-Shifter Circuit
+
+**Build from individual components**
+
+| Component | Quantity |
+|---|---:|
+| 2N2222A/PN2222A NPN transistor | 3 |
+| 10 kΩ base resistor | 3 |
+| 10 kΩ collector pull-up resistor | 3 |
+| Suitable prototyping PCB or custom PCB | Optional |
+
+Each channel uses one NPN transistor, one base resistor, and one collector pull-up resistor. Three channels are used for the three ESP32 speed-control outputs.
+
+**Purchase alternative**
+
+- [Robu — Search for 2N2222A transistors](https://robu.in/?s=2N2222A&post_type=product)
+- [Robocraze — Search for 2N2222A transistors](https://robocraze.com/search?q=2N2222A)
+- [Robu — Search for 10 kΩ resistors](https://robu.in/?s=10k+resistor&post_type=product)
+- [Robocraze — Search for 10 kΩ resistors](https://robocraze.com/search?q=10k+resistor)
+- [Robocraze — 4-channel logic-level converter](https://robocraze.com/products/smartelex-4p-llc-bi-directional-logic-level-converter)
+
+The transistor circuit is an inverting stage. A ready-made bidirectional logic-level converter is an alternative only if its behavior is compatible with the relay inputs; it is not automatically an exact replacement.
+
+### C. Startup-Delay Circuit
+
+**Build from individual components**
+
+| Component | Quantity |
+|---|---:|
+| PN2222A NPN transistor | 1 |
+| 2N2907A PNP transistor | 1 |
+| 10 kΩ resistors | 3 |
+| 2.2 kΩ resistor | 1 |
+| 220 µF electrolytic capacitors | 2 |
+| Suitable prototyping PCB or custom PCB | Optional |
+
+This circuit is intended to delay the relay supply during startup.
+
+**Purchase alternative**
+
+- [Robu — Search for PN2222A transistors](https://robu.in/?s=PN2222A&post_type=product)
+- [Robocraze — Search for PN2222A transistors](https://robocraze.com/search?q=PN2222A)
+- [Robu — Search for 2N2907A transistors](https://robu.in/?s=2N2907A&post_type=product)
+- [Robocraze — Search for 2N2907A transistors](https://robocraze.com/search?q=2N2907A)
+- [Robu — Browse electrolytic capacitors](https://robu.in/product-category/aluminium-electrolytic-capacitors/)
+- [Robocraze — Search for 220 µF capacitors](https://robocraze.com/search?q=220uF+electrolytic+capacitor)
+- [Robu — Search for a 2.2 kΩ resistor](https://robu.in/?s=2.2k+resistor&post_type=product)
+- [Robocraze — Search for a 2.2 kΩ resistor](https://robocraze.com/search?q=2.2k+resistor)
+
+For the capacitors, select the appropriate voltage rating and observe polarity. Verify the transistor pinouts against the exact parts you purchase.
+
+### D. PCB Options
+
+You can use a separate PCB for each circuit or combine both circuits onto a custom board.
+
+- [Robu — Custom PCB manufacturing](https://robu.in/product/online-pcb-manufacturing-service/)
+- [Robocraze — Prototyping boards](https://robocraze.com/collections/prototyping-boards)
+
+A bare PCB does not include the components unless assembly is explicitly included in the order. For a custom PCB, prepare and verify the schematic and layout before generating Gerber files.
 
 ## 2. ESP32 Pin Mapping
 
@@ -24,100 +86,56 @@ Verify the actual component count and resistor placement against your assembled 
 | Speed 2 control | GPIO 26 |
 | Speed 3 control | GPIO 27 |
 | Potentiometer signal | GPIO 34 |
-| Logic reference | GND |
 
-The firmware uses active-HIGH relay commands. However, the NPN logic-shifter stage described below inverts the signal, so the voltage at the transistor collector is the opposite of the ESP32 GPIO logic level.
+## 3. Logic-Shifter Circuit
 
-## 3. Potentiometer Wiring
+Build three identical NPN transistor stages.
 
-| Potentiometer terminal | Connection |
+```text
+                 +5 V
+                   |
+                 10 kΩ
+                   |
+                   +------ OUT → compatible 5 V logic input
+                   |
+                Collector
+                   |
+ESP32 GPIO--10 kΩ--Base
+                   |\
+                   | >  2N2222A
+                   |/
+                Emitter
+                   |
+                  GND
+```
+
+- GPIO LOW: transistor off; output pulled HIGH toward 5 V.
+- GPIO HIGH: transistor on; output pulled LOW.
+
+This circuit inverts the signal. Confirm the relay module's input polarity and compatibility before connecting it.
+
+## 4. Startup-Delay Circuit
+
+Use the PN2222A, 2N2907A, three 10 kΩ resistors, one 2.2 kΩ resistor, and two 220 µF electrolytic capacitors as specified in the circuit.
+
+| Component pin | Connection |
 |---|---|
-| Outer terminal 1 | ESP32 3.3 V |
-| Middle terminal (wiper) | GPIO 34 |
-| Outer terminal 2 | ESP32 GND |
+| 2N2907A pin 1 (E) | +5 V |
+| 2N2907A pin 2 (B) | PN2222A pin 3 (C), plus 2.2 kΩ resistor to +5 V |
+| 2N2907A pin 3 (C) | Relay VCC |
+| PN2222A pin 1 (E) | GND |
+| PN2222A pin 2 (B) | Three 10 kΩ resistors and two 220 µF capacitors, according to the assembled circuit |
+| PN2222A pin 3 (C) | 2N2907A pin 2 (B) |
+| Relay GND | Common GND |
+| Both capacitor positive terminals | PN2222A base |
+| Both capacitor negative terminals | GND |
 
-The potentiometer signal must remain within the ESP32's permitted input voltage range. Never connect 5 V to GPIO 34.
+Preserve the actual resistor-chain connections when building the circuit or laying out a PCB. Verify the exact transistor pinout and capacitor polarity before applying power.
 
-## 4. 2N2222A Relay Logic Shifter
+## 5. Safety
 
-Build one transistor stage for each relay control channel.
-
-### Connections for each channel
-
-| Component terminal | Connection |
-|---|---|
-| ESP32 GPIO | Through a 10 kΩ resistor to the transistor base |
-| Transistor emitter | GND |
-| Transistor collector | Corresponding relay-control output |
-| 10 kΩ pull-up resistor | Between +5 V and the transistor collector |
-| Relay-control output | Corresponding relay input, according to the existing board wiring |
-
-Use a common ground between the ESP32 and the 5 V relay-control circuit.
-
-### How it works
-
-The NPN transistor operates as an inverting switch:
-
-- GPIO HIGH: transistor conducts and pulls the collector output LOW.
-- GPIO LOW: transistor turns off and the pull-up resistor raises the collector output toward +5 V.
-
-**Important:** This stage inverts the logic. Because the current firmware defines the relay commands as active-HIGH, verify the relay module's input polarity and the complete signal path before connecting the fan. The transistor circuit must not be assumed to preserve the firmware's logic polarity.
-
-### Transistor pinout
-
-Do not assume that every 2N2222, PN2222A, or compatible transistor has the same E-B-C pin order. Check the exact manufacturer's datasheet and identify the emitter, base, and collector before soldering.
-
-## 5. Hardware Startup-Delay Circuit
-
-The purpose of the additional transistor circuit is to keep the relay logic-shifter stages disabled during the initial ESP32 boot period, reducing the chance of unintended relay activation.
-
-### Components used in the attempted circuit
-
-- One additional PN2222A NPN transistor
-- Two 220 µF electrolytic capacitors
-- 10 kΩ resistors
-- A 3.3 V reference and common ground
-
-### Intended connections
-
-The previously discussed shared-delay arrangement uses the additional transistor as a temporary clamp on the three logic-shifter transistor base nodes.
-
-| Delay-circuit connection | Intended destination |
-|---|---|
-| Additional transistor emitter | Common GND |
-| Additional transistor collector | The three logic-shifter base nodes |
-| Additional transistor base | The RC timing network |
-| RC network | 3.3 V reference and GND, using the installed capacitors and resistors |
-
-The two 220 µF capacitors and the 10 kΩ resistors form the timing network. The clamp transistor is intended to hold the logic-shifter stages in a defined state during startup, then release them after the timing interval.
-
-**Do not use this connection table alone to construct the circuit.** The exact capacitor polarity, resistor placement, and transistor-base connection must match a verified schematic. A capacitor connected in the wrong position can produce a brief pulse rather than a sustained startup delay.
-
-### Current limitation
-
-The delay circuit has been tested, but delaying the 5 V supply to the logic-shifter board did not prevent the relays from activating during startup. Therefore, the delay arrangement should be considered **unverified**, not a confirmed fix.
-
-Test the control circuit with the fan disconnected and monitor all three relay inputs during power-up, reset, and power-down. Confirm that no two speed relays can be active simultaneously.
-
-## 6. Relay Module and Fan
-
-The three relay channels select the fan's discrete speed inputs. The firmware uses GPIO 25, GPIO 26, and GPIO 27 for the three speed commands and includes a 250 ms break-before-make transition delay.
-
-Before connecting the fan:
-
-1. Test the ESP32 and logic shifters with the mains supply disconnected.
-2. Confirm the active state of each relay input.
-3. Confirm that the three speed channels cannot become active together during startup or reset.
-4. Verify the relay contact ratings for the fan's motor load.
-5. Check insulation, clearances, enclosure protection, and wiring with a qualified person.
-
-## 7. Electrical Safety
-
-This project controls a mains-powered fan.
-
-- Disconnect mains power before modifying any wiring.
-- Keep mains wiring physically separated from the ESP32 and low-voltage circuit.
-- Never connect mains voltage to an ESP32 pin or transistor logic input.
-- Use correctly rated relays, insulated terminals, strain relief, and a suitable enclosure.
-- Do not rely on software delays or an unverified RC circuit as the sole protection against unintended motor operation.
-- Have the mains wiring inspected by a qualified electrician.
+- Disconnect mains power before modifying wiring.
+- Keep mains AC wiring isolated from the ESP32 and low-voltage circuitry.
+- Never connect mains voltage to ESP32 GPIO pins.
+- Use suitably rated relays, insulation, and enclosures.
+- Have mains wiring inspected by a qualified electrician.
