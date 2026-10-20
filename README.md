@@ -14,14 +14,59 @@ An IoT-based smart fan controller built using an ESP32, relay module, and potent
 - **Local network access:** mDNS hostname `smartfan.local` where supported.
 - **Wi-Fi watchdog:** Restart the ESP32 if Wi-Fi remains disconnected for the configured timeout.
 - **Offline physical control:** The potentiometer control loop runs independently of the web dashboard.
-
 ## Hardware
 
-- ESP32 development board with USB-C and CP2102 USB-to-serial interface
-- Three-channel relay module compatible with the selected GPIO logic
-- Potentiometer, approximately 49 kΩ in the current build
+### Main Controller
+
+- ESP32 development board with CP2102 USB-to-serial interface
+- Three-channel relay module
+- Approximately 49–50 kΩ potentiometer
 - Three-speed pedestal fan
-- Suitable insulated wiring, enclosure, and power supplies
+
+### Optional Subassembly 1: Logic Shifter
+
+The three-channel transistor logic shifter can be built from individual components or replaced by a compatible ready-made module.
+
+**Individual components:**
+- 3 × 2N2222A/PN2222A NPN transistors
+- 6 × 10 kΩ resistors (3 base resistors and 3 pull-up resistors)
+
+**Purchase links:**
+- [Robu — 2N2222A transistors](https://robu.in/?s=2N2222A&post_type=product)
+- [Robocraze — 2N2222A transistors](https://robocraze.com/search?q=2N2222A)
+- [Robocraze — 4-channel logic-level converter](https://robocraze.com/products/smartelex-4p-llc-bi-directional-logic-level-converter)
+
+The transistor circuit inverts its input signal. Verify compatibility before substituting a different module.
+
+### Optional Subassembly 2: Startup-Delay Circuit
+
+The startup-delay circuit can be assembled from individual components or laid out on a separate PCB.
+
+**Individual components:**
+- 1 × PN2222A NPN transistor
+- 1 × 2N2907A PNP transistor
+- 3 × 10 kΩ resistors
+- 1 × 2.2 kΩ resistor
+- 2 × 220 µF electrolytic capacitors
+
+**Purchase links:**
+- [Robu — PN2222A](https://robu.in/?s=PN2222A&post_type=product)
+- [Robocraze — PN2222A](https://robocraze.com/search?q=PN2222A)
+- [Robu — 2N2907A](https://robu.in/?s=2N2907A&post_type=product)
+- [Robocraze — 2N2907A](https://robocraze.com/search?q=2N2907A)
+- [Robu — electrolytic capacitors](https://robu.in/product-category/aluminium-electrolytic-capacitors/)
+- [Robocraze — 220 µF capacitors](https://robocraze.com/search?q=220uF+electrolytic+capacitor)
+
+### PCB Options
+
+Build each subassembly on a prototyping board, or design a custom PCB.
+
+- [Robu — Custom PCB manufacturing](https://robu.in/product/online-pcb-manufacturing-service/)
+- [Robocraze — Prototyping boards](https://robocraze.com/collections/prototyping-boards)
+
+A bare PCB does not include components unless assembly is explicitly offered. Prepare and verify the circuit layout before ordering.
+
+See [`docs/wiring.md`](docs/wiring.md) for the complete pin mapping, wiring tables, and safety notes.
 
 ## Pin Configuration
 
